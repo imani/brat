@@ -1916,10 +1916,10 @@ var VisualizerUI = (function($, window, undefined) {
 
 
       var tutorialForm = $('#tutorial');
-      if (!$.browser.webkit) {
-        // Inject the browser warning
-        $('#browserwarning').css('display', 'block');
-      }
+      /*if (!$.browser.webkit) {// $.browser is REMOVED from jQuery FIXME
+         // Inject the browser warning
+         $('#browserwarning').css('display', 'block');
+      }*/
       initForm(tutorialForm, {
         width: 800,
         height: 600,
