@@ -938,7 +938,7 @@ var VisualizerUI = (function($, window, undefined) {
         };
       };
 
-      $('#search_form_event_roles .search_event_role select').live('change', searchEventRoleChanged);
+      $('#search_form_event_roles .search_event_role select').on('change', searchEventRoleChanged);
 
       // adding new role rows
       var addEmptySearchEventRole = function() {
@@ -982,8 +982,8 @@ var VisualizerUI = (function($, window, undefined) {
         $row.remove();
       }
 
-      $('#search_form_event_roles .search_event_role_add input').live('click', addEmptySearchEventRole);
-      $('#search_form_event_roles .search_event_role_del input').live('click', delSearchEventRole);
+      $('#search_form_event_roles .search_event_role_add input').on('click', addEmptySearchEventRole);
+      $('#search_form_event_roles .search_event_role_del input').on('click', delSearchEventRole);
 
       // When event type changes, the event roles do as well
       // Also, put in one empty role row
