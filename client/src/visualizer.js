@@ -307,7 +307,7 @@ var Visualizer = (function($, window, undefined) {
       var boxTextMargin = { x: 0, y: 1.5 }; // effect is inverse of "margin" for some reason
       var highlightRounding = { x: 3, y:3 }; // rx, ry for highlight boxes
       var spaceWidths = {
-        ' ': 4,
+        ' ': 80,
         '\u00a0': 4,
         '\u200b': 0,
         '\u3000': 8,
@@ -1393,7 +1393,8 @@ Util.profileStart('measures');
 Util.profileEnd('measures');
 Util.profileStart('chunks');
 
-        var currentX = Configuration.visual.margin.x + sentNumMargin + rowPadding;
+        var bsea = getPageSize();        //Function to take screen size 
+				var  currentX = bsea[0] -65 ;    // -65 some space for sentence number by right side 
         var rows = [];
         var fragmentHeights = [];
         var sentenceToggle = 0;
@@ -1537,7 +1538,7 @@ Util.profileStart('chunks');
         $.each(data.chunks, function(chunkNo, chunk) {
           var spaceWidth = 0;
           if (chunk.lastSpace) {
-            var spaceLen = chunk.lastSpace.length || 0;
+            var spaceLen = chunk.lastSpace.length || 10;
             var spacePos = chunk.lastSpace.lastIndexOf("\n") + 1;
             if (spacePos || !chunkNo || !chunk.sentence) {
               // indent if
@@ -1547,7 +1548,7 @@ Util.profileStart('chunks');
               // don't indent if
               // * the first word in a non-paragraph line
               for (var i = spacePos; i < spaceLen; i++) spaceWidth += spaceWidths[chunk.lastSpace[i]] || 0;
-              currentX += spaceWidth;
+              currentX += spaceWidth - 4;
             }
           }
 
@@ -1827,7 +1828,7 @@ Util.profileStart('chunks');
             // TODO change this with smallestLeftArc
             // var spacing = arcHorizontalSpacing - (currentX - lastArcBorder);
             // arc too small?
-          if (spacing > 0) currentX += spacing;
+          //if (spacing > 0) currentX += spacing;
           // }
           var rightBorderForArcs = hasRightArcs ? arcHorizontalSpacing : (hasInternalArcs ? arcSlant : 0);
 
@@ -1848,20 +1849,12 @@ Util.profileStart('chunks');
           }
 
           if (chunk.sentence ||
-              currentX + boxWidth + rightBorderForArcs >= canvasWidth - 2 * Configuration.visual.margin.x) {
+              currentX + boxWidth <= 100) {
             // the chunk does not fit
             row.arcs = svg.group(row.group, { 'class': 'arcs' });
             // TODO: related to issue #571
-            // replace arcHorizontalSpacing with a calculated value
-            currentX = Configuration.visual.margin.x + sentNumMargin + rowPadding +
-                (hasLeftArcs ? arcHorizontalSpacing : (hasInternalArcs ? arcSlant : 0)) +
-                spaceWidth;
-            if (hasLeftArcs) {
-              var adjustedCurTextWidth = sizes.texts.widths[chunk.text] + arcHorizontalSpacing;
-              if (adjustedCurTextWidth > maxTextWidth) {
-                maxTextWidth = adjustedCurTextWidth;
-              }
-            }
+            var bsea = getPageSize(); //screen size for new row 
+	    			currentX = bsea[0] -65 ;
             if (spacingRowBreak > 0) {
               currentX += spacingRowBreak;
               spacing = 0; // do not center intervening elements
@@ -1931,7 +1924,6 @@ Util.profileStart('chunks');
               for (var chunkIndex = spacingChunkId; chunkIndex < chunk.index; chunkIndex++) {
                 var movedChunk = data.chunks[chunkIndex];
                 translate(movedChunk, movedChunk.translation.x + spacing, 0);
-                movedChunk.textX += spacing;
               }
             }
           }
@@ -1939,11 +1931,16 @@ Util.profileStart('chunks');
           row.chunks.push(chunk);
           chunk.row = row;
 
-          translate(chunk, currentX + boxX, 0);
-          chunk.textX = currentX + boxX;
+          
+          //chunk.textX = currentX + boxX;
+          
 
-          currentX += boxWidth;
-        }); // chunks
+          currentX -= spaceWidth + boxWidth; // first subtract <tspan> size from current X position 
+	  
+	  			chunk.textX = currentX + boxX; //then set up Current X for rendering
+	  
+	  			translate(chunk, currentX + boxX, 0); //and arcs
+    			    }); // chunks
 
         // finish the last row
         row.arcs = svg.group(row.group, { 'class': 'arcs' });
@@ -2185,13 +2182,13 @@ Util.profileStart('arcs');
               var from, to;
 
               if (rowIndex == leftRow) {
-                from = leftBox.x + (chunkReverse ? 0 : leftBox.width);
+              	from = (leftBox.x - leftBox.width) + (chunkReverse ? 0 : leftBox.width);
               } else {
                 from = sentNumMargin;
               }
 
               if (rowIndex == rightRow) {
-                to = rightBox.x + (chunkReverse ? rightBox.width : 0);
+              	to = (rightBox.x + rightBox.width) + (chunkReverse ? rightBox.width : 0);
               } else {
                 to = canvasWidth - 2 * Configuration.visual.margin.y;
               }
@@ -2599,8 +2596,8 @@ Util.profileStart('rows');
           if (row.sentence) {
             var sentence_hash = new URLHash(coll, doc, { focus: [[ 'sent', row.sentence ]] } );
             var link = svg.link(sentNumGroup, sentence_hash.getHash());
-            var text = svg.text(link, sentNumMargin - Configuration.visual.margin.x, y - rowPadding,
-                '' + row.sentence, { 'data-sent': row.sentence });
+            var text = svg.text(link, document.getElementById('svg').offsetWidth, y - rowPadding,
+                '' + row.sentence, { 'data-sent': row.sentence });//take Screen size 
             var sentComment = data.sentComment[row.sentence];
             if (sentComment) {
               var box = text.getBBox();
@@ -2617,8 +2614,8 @@ Util.profileStart('rows');
                   ry: rectShadowRounding,
                   'data-sent': row.sentence,
               });
-              var text = svg.text(sentNumGroup, sentNumMargin - Configuration.visual.margin.x, y - rowPadding,
-                  '' + row.sentence, { 'data-sent': row.sentence });
+              var text = svg.text(sentNumGroup, document.getElementById('svg').offsetWidth, y - rowPadding,
+                  '' + row.sentence, { 'data-sent': row.sentence }); //take Screen size 
             }
           }
 
@@ -2669,11 +2666,19 @@ Util.profileStart('chunkFinish');
             sentenceText = svg.createText();
           }
           var nextChunk = data.chunks[chunkNo + 1];
-          var nextSpace = nextChunk ? nextChunk.space : '';
-          sentenceText.span(chunk.text + nextSpace, {
+          var nextSpace = nextChunk ? nextChunk.space : '     ';
+					sentenceText.span(chunk.text + nextSpace, {
+					            x: chunk.textX,
+					            y: chunk.row.textY,
+					            'data-chunk-id': chunk.index,
+								      'unicode-bidi' :'embed',
+          });
+          
+          sentenceText.span('', {
             x: chunk.textX,
             y: chunk.row.textY,
-            'data-chunk-id': chunk.index
+            'data-chunk-id': chunk.index,
+	    'unicode-bidi':'bidi-override',
           });
 
           // chunk backgrounds
@@ -2810,12 +2815,15 @@ Util.profileStart('chunkFinish');
         });
 
 
-Util.profileEnd('chunkFinish');
-Util.profileStart('finish');
+//Util.profileEnd('chunkFinish');
+//Util.profileStart('finish');
+
+var custTableWidth = document.getElementById('svg').offsetWidth - 20;
+
 
         svg.path(sentNumGroup, svg.createPath().
-          move(sentNumMargin, 0).
-          line(sentNumMargin, y));
+          move(custTableWidth, 0).
+          line(custTableWidth, y));
 
         // resize the SVG
         var width = maxTextWidth + sentNumMargin + 2 * Configuration.visual.margin.x + 1;
@@ -2826,9 +2834,9 @@ Util.profileStart('finish');
         $svg.attr("viewBox", "0 0 " + canvasWidth + " " + y);
         $svgDiv.height(y);
 
-Util.profileEnd('finish');
-Util.profileEnd('render');
-Util.profileReport();
+//Util.profileEnd('finish');
+//Util.profileEnd('render');
+//Util.profileReport();
 
 
         drawing = false;
@@ -3185,6 +3193,54 @@ Util.profileStart('before render');
               triggerRender();
           }
       });
+
+function  getPageSize(){
+       var xScroll, yScroll;
+
+       if (window.innerHeight && window.scrollMaxY) {
+               xScroll = document.body.scrollWidth;
+               yScroll = window.innerHeight + window.scrollMaxY;
+       } else if (document.body.scrollHeight > document.body.offsetHeight){ // all but Explorer Mac
+               xScroll = document.body.scrollWidth;
+               yScroll = document.body.scrollHeight;
+       } else if (document.documentElement && document.documentElement.scrollHeight > document.documentElement.offsetHeight){ // Explorer 6 strict mode
+               xScroll = document.documentElement.scrollWidth;
+               yScroll = document.documentElement.scrollHeight;
+       } else { // Explorer Mac...would also work in Mozilla and Safari
+               xScroll = document.body.offsetWidth;
+               yScroll = document.body.offsetHeight;
+       }
+
+       var windowWidth, windowHeight;
+       if (self.innerHeight) { // all except Explorer
+               windowWidth = self.innerWidth;
+               windowHeight = self.innerHeight;
+       } else if (document.documentElement && document.documentElement.clientHeight) { // Explorer 6 Strict Mode
+               windowWidth = document.documentElement.clientWidth;
+               windowHeight = document.documentElement.clientHeight;
+       } else if (document.body) { // other Explorers
+               windowWidth = document.body.clientWidth;
+               windowHeight = document.body.clientHeight;
+       }
+
+       // for small pages with total height less then height of the viewport
+       if(yScroll < windowHeight){
+               pageHeight = windowHeight;
+       } else {
+               pageHeight = yScroll;
+       }
+
+       // for small pages with total width less then width of the viewport
+       if(xScroll < windowWidth){
+               pageWidth = windowWidth;
+       } else {
+               pageWidth = xScroll;
+       }
+
+       return [pageWidth,pageHeight,windowWidth,windowHeight];
+}
+      
+
 
       var loadSpanTypes = function(types) {
         $.each(types, function(typeNo, type) {
